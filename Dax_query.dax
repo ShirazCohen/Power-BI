@@ -1,0 +1,174 @@
+﻿
+
+
+--------------------------Subsets--------------------------
+
+--Customers 
+EVALUATE
+SELECTCOLUMNS(Customers ,
+"full name ",Customers[CustomerName],
+"Industry Type",Customers[IndustryType],
+"region and contry ",CONCATENATE (Customers[GEO Region],CONCATENATE( " ",Customers[Country] ))
+ )
+ 
+--Products 
+EVALUATE 
+SELECTCOLUMNS(Products ,
+"Product Name" ,Products[Product Name],
+"Division Name" ,Products[Division Name],
+"Segment Name",Products[Segment Name])
+
+--Sales
+EVALUATE 
+SELECTCOLUMNS(Sales ,
+"Order number " ,sales[OrderSK],
+"Customer Name", RELATED(Customers[CustomerName]),
+"Product Name ",RELATED(Products[Product Name]),
+"revenue ",Sales[Revenue])
+
+
+
+
+
+
+-------------------------------Data grouping----------------------------
+
+--total Qty by year and country
+Evaluate
+    SUMMARIZE (
+        Sales,
+        'Date'[Year],
+        Customers[Country],
+		"Total Quantity", SUM(Sales[RevenueQty])
+    )
+
+
+
+--top 10 country by revenue 
+Evaluate
+ TOPN(10,
+    SUMMARIZE (
+        Sales,
+        Customers[Country],
+		"Total rev", SUM(Sales[Revenue])
+       )
+    )
+
+
+--total Qty by region and year
+
+Evaluate
+    SUMMARIZE (
+        Sales,
+        'Date'[Year],
+        Customers[GEO Region],
+		"Total Quantity", SUM(Sales[RevenueQty])
+    )
+
+
+--rev by region 
+
+Evaluate
+    SUMMARIZE (
+        Sales,       
+        Customers[GEO Region],
+		"Total Quantity", SUM(Sales[Revenue])
+    )
+
+--avg rev by disvison name :
+EVALUATE
+    SUMMARIZE (
+        Sales,
+        Products[Division Name],
+        "Average Rev",
+        AVERAGE(Sales[Revenue]),
+        "Average Qty",
+        AVERAGE(Sales[RevenueQty])
+    )
+    
+    
+--highest rev and lowest rev by product     
+ EVALUATE
+    SUMMARIZE (
+        Sales,
+        Products[Product Name],
+        "Highest Revenue",
+        MAX(Sales[Revenue]),
+        "Lowest Revenue",
+        MIN(Sales[Revenue])
+    )   
+   
+   
+----------------------------Data filtering------------------------------- 
+EVALUATE  
+SUMMARIZE(
+    	CALCULATETABLE(
+			Sales,
+			Customers[Country] = "China"
+		),
+        Customers[Country],
+        "Total revenue",
+        SUM(Sales[Revenue]),
+         "Order Amount",
+        SUM(Sales[RevenueQty])
+    )
+    
+    
+    
+
+
+EVALUATE
+CALCULATETABLE (
+    Products,
+	Products[Division Name] = "Life Insurance" , 
+	Products[Segment Name] ="First-degree relative"
+)
+
+
+
+
+
+-- Total income by date - what-if
+EVALUATE 
+    SUMMARIZE (
+        Sales,
+        'Date'[Date],
+        "Total income",
+        SUM(Sales[Revenue]),
+        "Total income with 10% discount",
+        SUM(Sales[Revenue]) * 0.90
+    )
+
+
+--------------------------------scalars-------------------------------------
+
+EVALUATE (ROW ("Customer Qty",DISTINCTCOUNT(Sales[CustomersSK])))
+
+
+
+EVALUATE ROW ("End-User customer Qty" ,(CALCULATE (
+    DISTINCTCOUNT (Sales[CustomersSK] ),
+   FILTER(Customers, Customers[IndustryType] = "End-User")
+)))
+
+
+EVALUATE ROW ("End-User customer Qty" ,(CALCULATE (
+    DISTINCTCOUNT (Sales[CustomersSK] ),
+   FILTER(Customers, Customers[IndustryType] = "Distributor")
+)))
+
+
+EVALUATE( ROW ( "Different Products Sold" ,DISTINCTCOUNT(Sales[ProductSK]) ))
+
+
+EVALUATE (ROW ("Avg Rev Per product", SUM(Sales[Revenue])/[Product Qty]))
+
+
+
+
+------------------------Date-------------------------------
+evaluate(
+         row(
+         "MinOrderDate", min(Sales[DateKey]) ,
+         "MaxOrderDate", max(Sales[DateKey]) )
+)
